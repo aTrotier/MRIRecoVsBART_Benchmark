@@ -21,17 +21,17 @@ jobs:
 
             - name: Install Bart
               run: sudo apt-get install -y git gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-              run: |
+            - run: |
                     git clone https://github.com/mrirecon/bart
                     cd bart
                     git checkout 7aeae14c58b4358fa9e84900b65a38add258607c
                     make
-              run: |
+            - run: |
                     cd bart
                     pwd
                     ls -l bart
                     ./bart version
-              run: |
+            - run: |
                     pip install numpy
 
 
