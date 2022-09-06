@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 50e81c16-2cd3-11ed-3f6e-c5ab57fc9565
 begin
 		using Pkg
-	
+
 	    Pkg.activate(pwd())
 		Pkg.status()
 end
@@ -22,7 +22,7 @@ end
 using MRIReco, BartIO, Plots
 
 # ╔═╡ efc8c243-9dfa-4e2a-ad28-1414705cf06e
-include("../utils/utils_MP2RAGE.jl");
+include("utils/utils_MP2RAGE.jl");
 
 # ╔═╡ 4476fb51-2839-4e20-94db-5e5052802e39
 md"# Prepare path"
@@ -31,10 +31,10 @@ md"# Prepare path"
 pwd()
 
 # ╔═╡ 53a7d708-e02d-44c9-bdf0-9b53850db592
-if Sys.isapple()
+if Sys.isapple() # my computer
 	bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
 else
-	bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
+	bart = BartIO.wrapper_bart("/home/runner/work/Benchmark_MRIReco_BART.jl/Benchmark_MRIReco_BART.jl/bart")
 end
 
 # ╔═╡ 721ba2e2-092b-4cd6-a6ca-50835ae97736
@@ -42,7 +42,7 @@ md"""# MP2RAGE
 ## Reconstruction of TI1/TI2"""
 
 # ╔═╡ 7cb4abfc-647c-4454-8ab1-67edebc46e60
-b = BrukerFile("../data/7/")
+b = BrukerFile("data/MP2RAGE_FULLY/")
 
 # ╔═╡ 86747c1b-7c23-45c3-a82f-07b461777f72
 begin
