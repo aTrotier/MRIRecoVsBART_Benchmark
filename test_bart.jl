@@ -43,17 +43,27 @@ heatmap(abs.(phantom), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,
 # ╔═╡ fac005c7-4965-4e0a-a828-cfdd67aae4cf
 md"# Generate 3D phantom"
 
+# ╔═╡ 46534d70-14c2-4565-8d98-7ac937270c0f
+begin
+	sx = 128
+	nch = 8
+end
+
 # ╔═╡ 1526b4f0-5a9a-4d82-9392-2fb97e62530c
 begin
-	phant3D = bart(1,"phantom -3 -x128 -s8");
+	phant3D = bart(1,"phantom -3 -x$sx -s$nch");
 	phant3D = bart(1,"noise -n0.005",phant3D)
+	phant3D_rss = bart(1,"rss 8",phant3D)
 end;
 
 # ╔═╡ b6cb859d-d9c6-4f28-ae9e-a04bc912b2d2
-heatmap(abs.(phant3D[:,:,80,8]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
+heatmap(abs.(phant3D_rss[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
 
 # ╔═╡ e62e9218-918d-4341-b26f-e4bd2df9d18d
 kbart = bart(1,"fft 7",phant3D);
+
+# ╔═╡ d73ab523-3840-4b33-a118-1bb0d650e306
+md"## create mask and undersample"
 
 # ╔═╡ c4490b95-527e-49a2-9b90-c31c86c82dc0
 mask = bart(1,"poisson -Y 128 -Z 128 -y1.2 -z1.2 -C 20 -v -V5");
@@ -71,14 +81,99 @@ begin
 	heatmap(abs.(im_u_sos[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
 end
 
+# ╔═╡ 614efa5f-4ca0-441f-b519-527fb5564d92
+md"## Estimates sensitivity maps"
+
 # ╔═╡ 56bd19d5-f7e6-465b-9bf5-88a834efa2c4
 sens = bart(1,"ecalib -m1 -c0",kbart_u);
 
+# ╔═╡ 7428391b-95a1-47a6-93c6-dc8208fbac28
+md"## PICS reconstruction"
+
 # ╔═╡ 912de2f2-cdb3-43ef-9077-dff56d2f82d7
-im_pics = bart(1,"pics -i30 -S -RW:7:0:0.01",kbart_u,sens);
+t1 = @elapsed im_pics = bart(1,"pics -d5 -i30 -S -RW:7:0:0.01",kbart_u,sens)
 
 # ╔═╡ e4e8a554-2e3d-4479-901d-e5f7179eada4
 	heatmap(abs.(im_pics[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
+
+# ╔═╡ 01e9bbef-ba51-4a09-9598-4ea7a1403764
+md"# Create undersampling datasets in julia"
+
+# ╔═╡ b580f18f-03be-4e07-a916-5d8851466220
+md"## Fully sampled datasets"
+
+# ╔═╡ 5aaad47b-ef42-4dbe-9011-8829b4e89f7f
+tr = MRIBase.CartesianTrajectory3D(Float64,128,128,numSlices=128)
+
+# ╔═╡ 2d8a3d57-db3b-4cda-9a2b-9031ba6c5ede
+kdata_j = [reshape(ComplexF64.(kbart),:,nch) for i=1:1, j=1:1, k=1:1]
+
+# ╔═╡ 0bb2bc6d-8afc-41a9-87ec-c7f820cc02bd
+begin
+	acq = AcquisitionData(tr,kdata_j)
+	acq.encodingSize = [sx,sx,sx]
+end
+
+# ╔═╡ c981d2c8-c81e-4072-8f96-91cc11615bef
+begin
+	params = Dict{Symbol, Any}()
+	params[:reco] = "direct"
+	params[:reconSize] = tuple(acq.encodingSize...)
+	Ireco = reconstruction(acq, params)
+	Isos = mergeChannels(Ireco)
+	heatmap(abs.(Isos[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
+end
+
+# ╔═╡ 32abd59d-5d66-4a0d-9f59-5207a3b88b75
+md"## Undersampled the data"
+
+# ╔═╡ 1aed83a6-33f8-451b-88cf-62744d905cbe
+begin
+	# find indices
+	I = findall(x->x==1,abs.(repeat(mask,sx,1,1)))
+	subsampleInd = LinearIndices((sx,sx,sx))[I]
+end;
+
+# ╔═╡ 9256ca72-0342-4e09-88d1-825622567501
+begin
+	acqCS = deepcopy(acq);
+	acqCS.subsampleIndices[1]=subsampleInd
+	acqCS.kdata[1,1,1] = acqCS.kdata[1,1,1][subsampleInd,:]
+end;
+
+# ╔═╡ aa168a9c-bc03-4b0c-ad3c-264fd4ebfc5a
+begin
+	Ireco_u = reconstruction(acqCS, params)
+	Isos_u = mergeChannels(Ireco_u)
+	heatmap(abs.(Isos_u[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
+end
+
+# ╔═╡ 544f06aa-5029-45e0-858d-4cdf55754dd1
+md"# Use fista"
+
+# ╔═╡ fa3fb104-5a4a-4841-b4ee-ba3ee45540b0
+begin
+	params2 = Dict{Symbol, Any}()
+	params2[:reco] = "multiCoil"
+	params2[:reconSize] = tuple(acqCS.encodingSize...)
+	params2[:senseMaps] = ComplexF64.(sens);
+	
+	params2[:solver] = "fista"
+	params2[:sparseTrafoName] = "Wavelet"
+	params2[:regularization] = "L1"
+	params2[:λ] = 0.01 # 5.e-2
+	params2[:iterations] = 30
+	params2[:normalize_ρ] = false
+	params2[:ρ] = 0.9
+	#params2[:relTol] = 0.1
+	params2[:normalizeReg] = true
+	
+	
+	t2 = @elapsed I_wav = reconstruction(acqCS, params2);
+end
+
+# ╔═╡ f02c089e-0d92-4984-a315-c378adea245f
+	heatmap(abs.(I_wav[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
 
 # ╔═╡ Cell order:
 # ╠═f2e90faa-2e1a-11ed-0709-d54f5d6ad389
@@ -89,13 +184,30 @@ im_pics = bart(1,"pics -i30 -S -RW:7:0:0.01",kbart_u,sens);
 # ╠═612fe7fa-6fa8-48dd-a947-5866cc0ffa27
 # ╠═ec957a2d-9810-46d9-87fb-bad4252b365f
 # ╟─fac005c7-4965-4e0a-a828-cfdd67aae4cf
+# ╠═46534d70-14c2-4565-8d98-7ac937270c0f
 # ╠═1526b4f0-5a9a-4d82-9392-2fb97e62530c
 # ╠═b6cb859d-d9c6-4f28-ae9e-a04bc912b2d2
 # ╠═e62e9218-918d-4341-b26f-e4bd2df9d18d
+# ╟─d73ab523-3840-4b33-a118-1bb0d650e306
 # ╠═c4490b95-527e-49a2-9b90-c31c86c82dc0
 # ╠═c922fe4e-4a61-4a82-a9ae-1421b7c40516
 # ╠═1493aea6-db34-44fb-b128-81ea92a061c8
 # ╠═5daabe9e-6d1e-4b53-8f37-c42a56d431af
+# ╟─614efa5f-4ca0-441f-b519-527fb5564d92
 # ╠═56bd19d5-f7e6-465b-9bf5-88a834efa2c4
+# ╟─7428391b-95a1-47a6-93c6-dc8208fbac28
 # ╠═912de2f2-cdb3-43ef-9077-dff56d2f82d7
 # ╠═e4e8a554-2e3d-4479-901d-e5f7179eada4
+# ╟─01e9bbef-ba51-4a09-9598-4ea7a1403764
+# ╟─b580f18f-03be-4e07-a916-5d8851466220
+# ╠═5aaad47b-ef42-4dbe-9011-8829b4e89f7f
+# ╠═2d8a3d57-db3b-4cda-9a2b-9031ba6c5ede
+# ╠═0bb2bc6d-8afc-41a9-87ec-c7f820cc02bd
+# ╠═c981d2c8-c81e-4072-8f96-91cc11615bef
+# ╟─32abd59d-5d66-4a0d-9f59-5207a3b88b75
+# ╠═1aed83a6-33f8-451b-88cf-62744d905cbe
+# ╠═9256ca72-0342-4e09-88d1-825622567501
+# ╠═aa168a9c-bc03-4b0c-ad3c-264fd4ebfc5a
+# ╟─544f06aa-5029-45e0-858d-4cdf55754dd1
+# ╠═fa3fb104-5a4a-4841-b4ee-ba3ee45540b0
+# ╠═f02c089e-0d92-4984-a315-c378adea245f
