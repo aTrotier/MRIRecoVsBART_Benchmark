@@ -120,16 +120,22 @@ md"# Julia processing"
 md"## Fully sampled datasets"
 
 # ╔═╡ 5aaad47b-ef42-4dbe-9011-8829b4e89f7f
-tr = MRIBase.CartesianTrajectory3D(Float64,128,128,numSlices=128)
+begin
+	T=typeof(abs.(kbart[1]))
+	tr = MRIBase.CartesianTrajectory3D(Float32,128,128,numSlices=128,TE=T(0),AQ=T(0))
+end
 
 # ╔═╡ 2d8a3d57-db3b-4cda-9a2b-9031ba6c5ede
-kdata_j = [reshape(ComplexF64.(kbart),:,nch) for i=1:1, j=1:1, k=1:1]
+kdata_j = [reshape(ComplexF32.(kbart),:,nch) for i=1:1, j=1:1, k=1:1]
 
 # ╔═╡ 0bb2bc6d-8afc-41a9-87ec-c7f820cc02bd
 begin
 	acq = AcquisitionData(tr,kdata_j)
 	acq.encodingSize = [sx,sx,sx]
 end
+
+# ╔═╡ f5021587-e8ea-4f62-90e9-f91dc42c0e51
+
 
 # ╔═╡ c981d2c8-c81e-4072-8f96-91cc11615bef
 begin
@@ -173,15 +179,15 @@ begin
 	params2 = Dict{Symbol, Any}()
 	params2[:reco] = "multiCoil"
 	params2[:reconSize] = tuple(acqCS.encodingSize...)
-	params2[:senseMaps] = ComplexF64.(sens);
+	params2[:senseMaps] = Complex{T}.(sens);
 
 	params2[:solver] = "fista"
 	params2[:sparseTrafoName] = "Wavelet"
 	params2[:regularization] = "L1"
-	params2[:λ] = 0.01 # 5.e-2
+	params2[:λ] = T(0.01) # 5.e-2
 	params2[:iterations] = 30
 	params2[:normalize_ρ] = false
-	params2[:ρ] = 0.95
+	params2[:ρ] = T(0.95)
 	#params2[:relTol] = 0.1
 	params2[:normalizeReg] = true
 
@@ -271,12 +277,13 @@ bart = $ssim_bart"
 # ╠═5aaad47b-ef42-4dbe-9011-8829b4e89f7f
 # ╠═2d8a3d57-db3b-4cda-9a2b-9031ba6c5ede
 # ╠═0bb2bc6d-8afc-41a9-87ec-c7f820cc02bd
+# ╠═f5021587-e8ea-4f62-90e9-f91dc42c0e51
 # ╠═c981d2c8-c81e-4072-8f96-91cc11615bef
 # ╟─32abd59d-5d66-4a0d-9f59-5207a3b88b75
 # ╠═1aed83a6-33f8-451b-88cf-62744d905cbe
 # ╠═9256ca72-0342-4e09-88d1-825622567501
 # ╠═aa168a9c-bc03-4b0c-ad3c-264fd4ebfc5a
-# ╠═544f06aa-5029-45e0-858d-4cdf55754dd1
+# ╟─544f06aa-5029-45e0-858d-4cdf55754dd1
 # ╠═fa3fb104-5a4a-4841-b4ee-ba3ee45540b0
 # ╠═f02c089e-0d92-4984-a315-c378adea245f
 # ╠═9b3f09d1-d1ae-4013-a057-a48a4cacaead
@@ -284,5 +291,5 @@ bart = $ssim_bart"
 # ╟─5cc0323c-c255-4176-87c9-2bdf306592af
 # ╟─abd6ac0d-123e-4463-97b5-877552a240a1
 # ╠═d57486a6-0175-4135-9737-cb610ad82a83
-# ╠═1f9a0b20-63b0-4198-a93e-114ba881571f
+# ╟─1f9a0b20-63b0-4198-a93e-114ba881571f
 # ╟─da073e09-8375-496c-8d18-889d2d563eff
