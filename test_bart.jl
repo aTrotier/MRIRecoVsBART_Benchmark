@@ -214,7 +214,7 @@ begin #round for plots
 	RMSE_julia2=round(RMSE_julia,digits =4)
 
 	threadj = Threads.nthreads()
-	threadb = ENV["OMP_NUM_THREADS"]=1
+	threadb = ENV["OMP_NUM_THREADS"]
 end;
 
 # ╔═╡ 1f9a0b20-63b0-4198-a93e-114ba881571f
