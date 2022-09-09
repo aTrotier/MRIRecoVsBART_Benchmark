@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 5c30fca3-c0af-4919-9978-a19be968f781
 begin
 		using Pkg
-	
+
 	    Pkg.activate(pwd())
 		Pkg.instantiate()
 end;
@@ -23,10 +23,14 @@ end
 pwd()
 
 # ╔═╡ f0b62eb2-49a7-4b17-8af7-85986b750b10
-if Sys.isapple()
-	bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
-else
-	bart = BartIO.wrapper_bart("/home/runner/work/MRIRecoVsBART_Benchmark/MRIRecoVsBART_Benchmark/bart")
+begin
+    display(Threads.nthreads())
+    ENV["OMP_NUM_THREADS"]=Threads.nthreads()
+    if Sys.isapple()
+        bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
+    else
+        bart = BartIO.wrapper_bart("/home/runner/work/MRIRecoVsBART_Benchmark/MRIRecoVsBART_Benchmark/bart")
+    end
 end
 
 # ╔═╡ 682f31df-bf2e-4b1e-96f0-a4ab4606114a
@@ -170,7 +174,7 @@ begin
 	params2[:reco] = "multiCoil"
 	params2[:reconSize] = tuple(acqCS.encodingSize...)
 	params2[:senseMaps] = ComplexF64.(sens);
-	
+
 	params2[:solver] = "fista"
 	params2[:sparseTrafoName] = "Wavelet"
 	params2[:regularization] = "L1"
@@ -180,8 +184,8 @@ begin
 	params2[:ρ] = 0.95
 	#params2[:relTol] = 0.1
 	params2[:normalizeReg] = true
-	
-	
+
+
 	t2 = @elapsed I_wav = reconstruction(acqCS, params2);
 end
 
@@ -208,10 +212,15 @@ begin #round for plots
 
 	RMSE_bart2=round(Float64.(RMSE_bart),digits =4)
 	RMSE_julia2=round(RMSE_julia,digits =4)
+
+	threadj = Threads.nthreads()
+	threadb = ENV["OMP_NUM_THREADS"]=1
 end;
 
 # ╔═╡ 1f9a0b20-63b0-4198-a93e-114ba881571f
 md"Reconstruction time julia = $t_julia sec vs t_bart = $t1 sec
+
+number of threads for julia = $threadj et pour bart = $threadb
 
 **Bart is $rapport faster**"
 
