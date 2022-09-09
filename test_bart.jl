@@ -220,7 +220,7 @@ end;
 # ╔═╡ 1f9a0b20-63b0-4198-a93e-114ba881571f
 md"Reconstruction time julia = $t_julia sec vs t_bart = $t1 sec
 
-number of threads for julia = $threadj et pour bart = $threadb
+number of threads for julia = $threadj and bart = $threadb
 
 **Bart is $rapport faster**"
 
@@ -284,5 +284,5 @@ bart = $ssim_bart"
 # ╟─5cc0323c-c255-4176-87c9-2bdf306592af
 # ╟─abd6ac0d-123e-4463-97b5-877552a240a1
 # ╠═d57486a6-0175-4135-9737-cb610ad82a83
-# ╟─1f9a0b20-63b0-4198-a93e-114ba881571f
+# ╠═1f9a0b20-63b0-4198-a93e-114ba881571f
 # ╟─da073e09-8375-496c-8d18-889d2d563eff
