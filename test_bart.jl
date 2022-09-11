@@ -25,7 +25,7 @@ pwd()
 # ╔═╡ f0b62eb2-49a7-4b17-8af7-85986b750b10
 begin
     display(Threads.nthreads())
-    ENV["OMP_NUM_THREADS"]=Threads.nthreads()
+    ENV["OMP_NUM_THREADS"]=1 #Threads.nthreads() when FFTop will use them
     if Sys.isapple()
         bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
     else
