@@ -25,7 +25,7 @@ pwd()
 # ╔═╡ f0b62eb2-49a7-4b17-8af7-85986b750b10
 begin
     display(Threads.nthreads())
-    ENV["OMP_NUM_THREADS"]=1 #Threads.nthreads() when FFTop will use them
+    ENV["OMP_NUM_THREADS"]=2 #Threads.nthreads() when FFTop will use them
     if Sys.isapple()
         bart = BartIO.wrapper_bart("/Users/aurelien/Documents/Dev/mriSoft/bart")
     else
@@ -142,7 +142,7 @@ begin
 	params = Dict{Symbol, Any}()
 	params[:reco] = "direct"
 	params[:reconSize] = tuple(acq.encodingSize...)
-	Ireco = reconstruction(acq, params)
+	t_sos = @time Ireco = reconstruction(acq, params)
 	Isos = mergeChannels(Ireco)
 	heatmap(abs.(Isos[:,:,80]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing,showaxis = false)
 end
@@ -184,9 +184,9 @@ begin
 	params2[:solver] = "fista"
 	params2[:sparseTrafoName] = "Wavelet"
 	params2[:regularization] = "L1"
-	params2[:λ] = T(0.01) # 5.e-2
+	params2[:λ] = T(0.005) # 5.e-2
 	params2[:iterations] = 30
-	params2[:normalize_ρ] = false
+	params2[:normalize_ρ] = true
 	params2[:ρ] = T(0.95)
 	#params2[:relTol] = 0.1
 	params2[:normalizeReg] = true
